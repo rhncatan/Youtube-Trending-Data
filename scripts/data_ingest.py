@@ -2,14 +2,16 @@ from googleapiclient.discovery import build
 import pandas as pd
 from datetime import datetime
 import os
-
+import requests
+from database import insert_today_trending, update_categories
 
 api_key = 'AIzaSyABveruujCVaLDrqkcZqZiyvpabXLHmDcY'
-
 youtube = build('youtube','v3', developerKey=api_key)
 
 os.makedirs('../data/raw', exist_ok=True)
 output_dir = os.path.join(os.getcwd(), 'data', 'raw')
+
+
 
 def get_trending_videos(region_code='PH',max_results='50'):
 
@@ -35,12 +37,44 @@ def get_trending_videos(region_code='PH',max_results='50'):
         })
     
     df = pd.DataFrame(data)
-    today =  datetime.today().strftime('%Y-%m-%d')
+    
     
 
     return df
 
+def refresh_categories(region_code='PH'):
+    url = 'https://www.googleapis.com/youtube/v3/videoCategories'
+    params = {
+        'part': 'snippet',
+        'regionCode': region_code,
+        'key': api_key
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    # Parse the category ID mapping
+    categories = {
+        item['id']: item['snippet']['title']
+        for item in data['items']
+    }
+    df_categories = pd.DataFrame(list(categories.items()), columns=['CategoryId','CategoryName'])
+    df_categories['run_date'] = today
+
+    try:
+        df_categories.to_csv(os.path.join(output_dir, f'categories_{region_code}.csv'),
+                  index=False)
+    except Exception as e:
+        print(f"Failed to save csv: {e}")
+
+    print(df_categories)
+
+
+
+
+
 if __name__ == '__main__':
+    today =  datetime.today().strftime('%Y-%m-%d')
     region_code='PH'
     df = get_trending_videos(region_code=region_code)
     today =  datetime.today().strftime('%Y-%m-%d')

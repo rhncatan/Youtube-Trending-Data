@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+db = 'db/yt.db'
 def create_tables():
     os.makedirs('db', exist_ok=True)
     
@@ -20,9 +21,10 @@ def create_tables():
         ''')
 
         conn.execute('''
-        CREATE TABLE IF NOT EXISTS category_ids (
+        CREATE TABLE IF NOT EXISTS categories (
             CategoryId TEXT NOT NULL,
             CategoryName TEXT NOT NULL,
+            run_date DATE NOT NULL,
             PRIMARY KEY (CategoryId)
         );
         ''')
@@ -31,7 +33,7 @@ def create_tables():
         print("Tables exist in database.")
 
 def insert_today_trending(df):
-    with sqlite3.connect('db/yt.db') as conn:
+    with sqlite3.connect(db) as conn:
         df.to_sql('temporary_table', 
                   conn, 
                   if_exists='replace', 
@@ -42,11 +44,27 @@ def insert_today_trending(df):
         (Rank, video_id, title, channel_title, category_id, published_at, comment_count, trend_date)
         SELECT Rank, video_id, title, channel_title, category_id, published_at, comment_count, trend_date
         FROM temporary_table
-        """)                                      # update the schedule table in the database
+        """)                                      # update the trendtopics table in the database
         conn.execute('DROP TABLE temporary_table')
 
         conn.commit()
         print(f"Inserted {len(df)} records into trending_topics")
+
+def update_categories(df):
+    with sqlite3.connect(db) as conn:
+        df.to_sql('temp',
+                  conn,
+                  if_exists="replace",
+                  index=False)
+
+        conn.execute("""
+        REPLACE INTO categories
+        (CategoryId, CategoryName, run_date)
+        SELECT CategoryId, CategoryName, run_date FROM temp
+        """)
+        conn.execute('DROP TABLE temp')
+
+        print(f"Updated: {len(df)} records in categories")
 
 if __name__ == '__main__':
     create_tables()
