@@ -1,7 +1,10 @@
 import pandas as pd
 from database import update_categories, extract_categories
+from datetime import datetime
+import os
 
-def process_trending_topics(df):
+def process_trending_topics(df,region_code):
+    output_dir = r'../data/processed'
     df_process = df.copy()
     
     # Extract categories from DB
@@ -17,7 +20,7 @@ def process_trending_topics(df):
 
     # Step 1: If any missing CategoryName, try updating categories
     if df_process['CategoryName'].isna().any():
-        print("🔄 Missing categories found — updating category list...")
+        print("Missing categories found — updating category list...")
         update_categories()
         
         # Reload categories and join again
@@ -32,11 +35,19 @@ def process_trending_topics(df):
     # Step 2: Impute missing CategoryName to 'Others'
     missing_count = df_process['CategoryName'].isna().sum()
     if missing_count > 0:
-        print(f"⚠ {missing_count} categories still missing. Imputing as 'Others'.")
+        print(f"{missing_count} categories still missing. Imputing as 'Others'.")
         df_process['CategoryName'] = df_process['CategoryName'].fillna('Others')
 
     # Step 3: Adjust Rank to start at 1
     df_process['Rank'] = df_process['Rank'] + 1
+
+    try:
+        today =  datetime.today().strftime('%Y-%m-%d')
+        df_process.to_csv(os.path.join(output_dir, f'{today}_{region_code}_trending_p.csv'),
+                  index=False)
+    except Exception as e:
+        print(f"Failed to save csv: {e}")
+
 
     return df_process
 
