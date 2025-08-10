@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import pandas as pd
 
 db = 'db/yt.db'
 def create_tables():
@@ -65,6 +66,11 @@ def update_categories(df):
         conn.execute('DROP TABLE temp')
 
         print(f"Updated: {len(df)} records in categories")
+
+def extract_categories():
+    with sqlite3.connect(db) as conn:
+        df = pd.read_sql_query("SELECT * FROM categories", conn)
+        return df
 
 if __name__ == '__main__':
     create_tables()
