@@ -9,6 +9,7 @@ api_key = 'AIzaSyABveruujCVaLDrqkcZqZiyvpabXLHmDcY'
 youtube = build('youtube','v3', developerKey=api_key)
 
 os.makedirs('../data/raw', exist_ok=True)
+os.makedirs('../data/categories', exist_ok=True)
 output_dir = os.path.join(os.getcwd(), 'data', 'raw')
 
 
@@ -42,7 +43,9 @@ def get_trending_videos(region_code='PH',max_results='50'):
 
     return df
 
+
 def refresh_categories(region_code='PH'):
+    today =  datetime.today().strftime('%Y-%m-%d')
     url = 'https://www.googleapis.com/youtube/v3/videoCategories'
     params = {
         'part': 'snippet',
@@ -61,8 +64,10 @@ def refresh_categories(region_code='PH'):
     df_categories = pd.DataFrame(list(categories.items()), columns=['CategoryId','CategoryName'])
     df_categories['run_date'] = today
 
+    update_categories(df_categories)
+
     try:
-        df_categories.to_csv(os.path.join(output_dir, f'categories_{region_code}.csv'),
+        df_categories.to_csv(os.path.join(os.getcwd(),'data','categories', f'categories_{region_code}.csv'),
                   index=False)
     except Exception as e:
         print(f"Failed to save csv: {e}")
@@ -74,6 +79,10 @@ def refresh_categories(region_code='PH'):
 
 
 if __name__ == '__main__':
+    os.makedirs('../data/raw', exist_ok=True)
+    os.makedirs('../data/categories', exist_ok=True)
+    output_dir = os.path.join(os.getcwd(), 'data', 'raw')
+    
     today =  datetime.today().strftime('%Y-%m-%d')
     region_code='PH'
     df = get_trending_videos(region_code=region_code)

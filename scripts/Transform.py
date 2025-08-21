@@ -1,14 +1,23 @@
 import pandas as pd
 from database import update_categories, extract_categories
 from datetime import datetime
+from data_ingest import refresh_categories
+
 import os
 
 def process_trending_topics(df,region_code):
-    output_dir = r'../data/processed'
+    os.makedirs('data/processed', exist_ok=True)
+    output_dir = os.path.join(os.getcwd(),'data','processed')
     df_process = df.copy()
     
     # Extract categories from DB
     df_categories = extract_categories()
+    
+    if df_categories.empty:
+        refresh_categories(region_code=region_code)
+
+    df_process['category_id'] = df_process['category_id'].astype(str)
+    df_categories['CategoryId'] = df_categories['CategoryId'].astype(str) 
 
     # First join
     df_process = df_process.merge(
@@ -21,7 +30,7 @@ def process_trending_topics(df,region_code):
     # Step 1: If any missing CategoryName, try updating categories
     if df_process['CategoryName'].isna().any():
         print("Missing categories found — updating category list...")
-        update_categories()
+        update_categories(df_process)
         
         # Reload categories and join again
         df_categories = extract_categories()

@@ -6,7 +6,7 @@ db = 'db/yt.db'
 def create_tables():
     os.makedirs('db', exist_ok=True)
     
-    with sqlite3.connect('db') as conn:
+    with sqlite3.connect(db) as conn:
         conn.execute('''
         CREATE TABLE IF NOT EXISTS trending_topics (
             Rank INTEGER,
@@ -51,6 +51,7 @@ def insert_today_trending(df):
         conn.commit()
         print(f"Inserted {len(df)} records into trending_topics")
 
+
 def update_categories(df):
     with sqlite3.connect(db) as conn:
         df.to_sql('temp',
@@ -59,7 +60,7 @@ def update_categories(df):
                   index=False)
 
         conn.execute("""
-        REPLACE INTO categories
+        INSERT OR REPLACE INTO categories
         (CategoryId, CategoryName, run_date)
         SELECT CategoryId, CategoryName, run_date FROM temp
         """)
@@ -68,6 +69,7 @@ def update_categories(df):
         print(f"Updated: {len(df)} records in categories")
 
 def extract_categories():
+    create_tables()
     with sqlite3.connect(db) as conn:
         df = pd.read_sql_query("SELECT * FROM categories", conn)
         return df

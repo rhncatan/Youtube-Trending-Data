@@ -8,10 +8,10 @@ from Transform import process_trending_topics
 from Load import load_today_trending
 
 class CSVCreatedHandler(FileSystemEventHandler):
-    # def on_any_event(self, event: FileSystemEvent) -> None:
-    #     print(event)
+
     def on_created(self, event):
-        if not event.is_directory and event.src.path.lower().endswith('.csv'):
+        # If event is not a directory update and event created is .csv
+        if not event.is_directory and event.src_path.lower().endswith('.csv'):
             filename = os.path.basename(event.src_path)
             region_code = filename.split("_")[1]
             print(f"Detected new CSV: {filename}")
@@ -19,10 +19,9 @@ class CSVCreatedHandler(FileSystemEventHandler):
             if self._wait_until_file_ready(event.src_path):
                 print(f"File is ready...")
 
-                df = process_trending_topics(pd.read_csv(event.src.path), region_code=region_code)
+                df = process_trending_topics(pd.read_csv(event.src_path), region_code=region_code)
 
                 load_today_trending(df)
-
 
             else:
                 print(f"File never stabilized: {filename}")
